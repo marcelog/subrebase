@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+abort "Use: #{__FILE__} <secs> <input file> <output file>" \
+  unless ARGV.length == 3
+
+## Given a string in the form "HH:MM:SS,mss" (where mss are milliseconds)
+## will return a new string with the same format adding or substracting
+## the given amount of "secs"
+def adjust(time_str, secs)
+  time_str =~ /(\d+):(\d+):(\d+),(\d+)/
+  hour = $1.to_i
+  min = $2.to_i
+  sec = $3.to_i
+  msec = $4.to_i
+
+  sec += secs
+  while sec > 59 do
+    min += 1
+    sec -= 60
+  end
+  while sec < 0 do
+    min -= 1
+    sec += 60
+  end
+
+  while min > 59 do
+    hour += 1
+    min -= 60
+  end
+  while min < 0 do
+    hour -= 1
+    min += 60
+  end
+  hour = "%02d" % hour
+  min = "%02d" % min
+  sec = "%02d" % sec
+  msec = "%02d" % msec
+  "#{hour}:#{min}:#{sec},#{msec}"
+end
+
+################################################################################
+## Main entry point.
+################################################################################
+secs = ARGV[0].to_i
+input_file = ARGV[1]
+ouput_file = ARGV[2]
+
+output_handler = File.open("#{ouput_file}", 'w')
+
+File.open(input_file, "r") do |handle|
+  handle.each_line do |line|
+    newline = if line =~ /([0-9:,]+) --> ([0-9:,]+)/ then
+      start_time = adjust($1, secs)
+      end_time = adjust($2, secs)
+      "#{start_time} --> #{end_time}"
+    else
+      line
+    end
+    output_handler.puts newline
+  end
+end
